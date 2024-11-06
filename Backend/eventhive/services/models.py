@@ -1,28 +1,49 @@
 from django.db import models
+from django.utils import timezone
 
 # Create your models here.
 
 class ServiceCategory(models.Model):
     name = models.CharField(max_length=50, unique=True)
     description = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.name
     
 class Venue(models.Model):
+    FACILITY_CHOICES = [
+        ('wifi', 'WiFi'),
+        ('parking', 'Parking'),
+        ('restrooms', 'Restrooms'),
+        ('audio_visual', 'Audio-Visual Equipment'),
+        ('stage_lighting', 'Stage and Lighting'),
+        ('lounge_area', 'Lounge Area'),
+    ]
+
+    EVENT_COMPATIBILITY_CHOICES = [
+        ('conference', 'Conference'),
+        ('trade_show', 'Trade Show'),
+        ('party', 'Party'),
+        ('wedding', 'Wedding'),
+        ('festival', 'Festival'),
+        ('exhibition', 'Exhibition'),
+    ]
     venue_name = models.CharField(max_length=200)
     description = models.TextField()
     location_name = models.CharField(max_length=100)
     location_map = models.URLField(null=True, blank=True)
     price_weekday = models.DecimalField(max_digits=10, decimal_places=2)
     price_weekend = models.DecimalField(max_digits=10, decimal_places=2)
-    # availability = models.BooleanField(default=True)  # You may want to change this later
     contact_phone = models.CharField(max_length=15)
     capacity = models.PositiveIntegerField()
-    facilities = models.JSONField(blank=True, null=True)
-    event_type_compatibility = models.JSONField(blank=True, null=True)
+    facilities = models.JSONField(choices=FACILITY_CHOICES, blank=True, null=True)
+    event_type_compatibility = models.JSONField(choices=EVENT_COMPATIBILITY_CHOICES, blank=True, null=True)
     photos = models.JSONField(blank=True, null=True)
     category = models.ForeignKey(ServiceCategory, related_name='venues', on_delete=models.CASCADE)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
     
     def __str__(self):
         return self.venue_name
@@ -39,6 +60,8 @@ class Catering(models.Model):
     minimum_order_size = models.PositiveIntegerField()
     photos = models.JSONField(blank=True, null=True)
     category = models.ForeignKey(ServiceCategory, related_name='caterings', on_delete=models.CASCADE)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
     
     def __str__(self):
         return self.catering_name
@@ -54,6 +77,8 @@ class PhotographyVideography(models.Model):
     service_duration = models.DecimalField(max_digits=5, decimal_places=2)  # Duration in hours
     photos = models.JSONField(blank=True, null=True)
     category = models.ForeignKey(ServiceCategory, related_name='photography_videographies', on_delete=models.CASCADE)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
     
     def __str__(self):
         return self.name
@@ -68,19 +93,33 @@ class Entertainment(models.Model):
     contact = models.CharField(max_length=15)
     performance_duration = models.DecimalField(max_digits=5, decimal_places=2)  # Duration in hours
     category = models.ForeignKey(ServiceCategory, related_name='entertainments', on_delete=models.CASCADE)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
     
     def __str__(self):
         return self.name
     
 
 class EventPlanner(models.Model):
+    EVENT_CHOICES = [
+        ('conference', 'Conference'),
+        ('trade_show', 'Trade Show'),
+        ('party', 'Party'),
+        ('wedding', 'Wedding'),
+        ('festival', 'Festival'),
+        ('exhibition', 'Exhibition'),
+        ('charity_event', 'Charity Event'),
+        ('workshop', 'Workshop'),
+    ]
     name = models.CharField(max_length=200)
     description = models.TextField()
     available_locations = models.CharField(max_length=200)
     price = models.DecimalField(max_digits=10, decimal_places=2)
-    event_type = models.CharField(max_length=100) # Event types they can handle
+    event_type = models.CharField(max_length=100, choices=EVENT_CHOICES, blank=True,null=True)
     contact = models.CharField(max_length=15)
     category = models.ForeignKey(ServiceCategory, related_name='event_planners', on_delete=models.CASCADE)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
     
     def __str__(self):
         return self.name
@@ -91,15 +130,24 @@ class Sports(models.Model):
     description = models.TextField()
     location_name = models.CharField(max_length=100)
     location_map = models.URLField(blank=True, null=True)
-    price_by_seating = models.JSONField() # JSON with seating types and prices
     event_date = models.DateField()
     seating_map_url = models.URLField(blank=True, null=True)
-    ticket_type = models.JSONField()  # Different types of tickets (VIP, Regular, etc.)
-    available_tickets_for_each_type = models.JSONField()  # Number of available tickets per type
     category = models.ForeignKey(ServiceCategory, related_name='sports', on_delete=models.CASCADE)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
     
     def __str__(self):
         return self.name
+
+
+class SportsTicketType(models.Model):
+    sport = models.ForeignKey('Sports', related_name='ticket_types', on_delete=models.CASCADE)
+    seating_type = models.CharField(max_length=50)
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    available_tickets = models.PositiveIntegerField()
+
+    def __str__(self):
+        return f"{self.type} - {self.price}"
 
 
 class ConcertAndShow(models.Model):
@@ -107,30 +155,47 @@ class ConcertAndShow(models.Model):
     description = models.TextField()
     location_name = models.CharField(max_length=100)
     location_map = models.URLField(blank=True, null=True)
-    ticket_type = models.JSONField()
-    price_by_ticket = models.JSONField() # JSON with ticket types and prices
-    available_tickets_for_each_type = models.JSONField()  # Number of available tickets per type
     performer_name = models.CharField(max_length=200)
     event_date = models.DateField()
     duration = models.DecimalField(max_digits=5, decimal_places=2)  # Duration in hours
     category = models.ForeignKey(ServiceCategory, related_name='concert_and_shows', on_delete=models.CASCADE)
-    
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
     def __str__(self):
         return self.name
+
+
+class ConcertTicketType(models.Model):
+    concert = models.ForeignKey('ConcertAndShow', related_name='ticket_types', on_delete=models.CASCADE)
+    type = models.CharField(max_length=50)
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    available_tickets = models.PositiveIntegerField()
+
+    def __str__(self):
+        return f"{self.type} - {self.price}"
 
 
 class Hotel(models.Model):
     name = models.CharField(max_length=200)
     description = models.TextField()
-    location_name = models.CharField(max_length=100)    
+    location_name = models.CharField(max_length=100)
     location_map = models.URLField(blank=True, null=True)
-    room_type = models.JSONField()  # Types of rooms (AC, Non-AC, Suite, etc.)
-    price_by_room_type = models.JSONField()  # Prices for each room type
-    available_rooms_for_each_type = models.JSONField()  # Available rooms per type
     category = models.ForeignKey(ServiceCategory, related_name='hotels', on_delete=models.CASCADE)
-    
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
     def __str__(self):
         return self.name
+
+class RoomType(models.Model):
+    hotel = models.ForeignKey(Hotel, related_name='rooms', on_delete=models.CASCADE)
+    room_type = models.CharField(max_length=50)  # e.g., Suite, Standard, etc.
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    available_rooms = models.PositiveIntegerField()
+
+    def __str__(self):
+        return f"{self.room_type} - {self.price}"
 
 
 class Facility(models.Model):
