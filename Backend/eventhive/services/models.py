@@ -15,6 +15,7 @@ class ServiceCategory(models.Model):
 class Venue(models.Model):
     FACILITY_CHOICES = [
         ('wifi', 'WiFi'),
+        ('ac', 'A/C'),
         ('parking', 'Parking'),
         ('restrooms', 'Restrooms'),
         ('audio_visual', 'Audio-Visual Equipment'),
@@ -74,7 +75,6 @@ class PhotographyVideography(models.Model):
     price_weekday = models.DecimalField(max_digits=10, decimal_places=2)
     price_weekend = models.DecimalField(max_digits=10, decimal_places=2)
     contact = models.CharField(max_length=15)
-    service_duration = models.DecimalField(max_digits=5, decimal_places=2)  # Duration in hours
     photos = models.JSONField(blank=True, null=True)
     category = models.ForeignKey(ServiceCategory, related_name='photography_videographies', on_delete=models.CASCADE)
     created_at = models.DateTimeField(default=timezone.now)
